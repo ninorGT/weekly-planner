@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Weekly Planner</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f7f8fc;
+      color: #333;
+    }
+
+    header {
+      background: #4a90e2;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .date-time {
+      font-size: 18px;
+    }
+
+    .quote {
+      font-style: italic;
+      margin-top: 10px;
+    }
+
+    section {
+      padding: 20px;
+      margin: 20px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      color: #4a90e2;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      margin: 15px 0;
+      background: #ddd;
+      border-radius: 20px;
+      height: 20px;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: #4a90e2;
+      text-align: center;
+      color: white;
+      font-size: 12px;
+      line-height: 20px;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 8px 15px;
+      border: none;
+      border-radius: 5px;
+      background: #4a90e2;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #357ab8;
+    }
+
+    /* Schedule */
+    .schedule {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+      text-align: center;
+    }
+
+    .day {
+      padding: 10px;
+      border-radius: 10px;
+      background: #eef4ff;
+    }
+
+    .course { background: #aed6f1; }
+    .study { background: #abebc6; }
+    .personal { background: #f9e79f; }
+
+    /* Work log */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      background: #f0f0f0;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Weekly Planner</h1>
+    <div class="date-time" id="date-time"></div>
+    <div id="weather">Weather: Loading...</div>
+    <div class="quote">"Success is the sum of small efforts repeated day in and day out."</div>
+  </header>
+
+  <!-- Daily Tasks -->
+  <section>
+    <h2>Daily Tasks</h2>
+    <input type="text" id="new-task" placeholder="Add a task...">
+    <button onclick="addTask()">Add</button>
+    <ul id="task-list"></ul>
+    <div class="progress-container">
+      <div class="progress-bar" id="progress-bar">0%</div>
+    </div>
+    <button onclick="resetTasks()">Reset Tasks</button>
+    <h3>Top Priority of the Day</h3>
+    <input type="text" placeholder="Enter top priority...">
+  </section>
+
+  <!-- Weekly Schedule -->
+  <section>
+    <h2>Weekly Schedule</h2>
+    <div class="schedule">
+      <div class="day course">Monday<br>Math Class</div>
+      <div class="day study">Tuesday<br>Review Economics</div>
+      <div class="day course">Wednesday<br>Physics Lab</div>
+      <div class="day personal">Thursday<br>Sports</div>
+      <div class="day study">Friday<br>Essay Writing</div>
+      <div class="day personal">Saturday<br>Friends</div>
+      <div class="day study">Sunday<br>Revision</div>
+    </div>
+  </section>
+
+  <!-- Work Log -->
+  <section>
+    <h2>Daily Work Log</h2>
+    <button onclick="addSession()">New Session</button>
+    <button onclick="closeDay()">Close Day</button>
+    <table id="work-log">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Hours</th>
+          <th>Subject</th>
+          <th>Type</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+    <div id="summary"></div>
+  </section>
+
+  <script>
+    // Date & Time Paris
+    function updateDateTime() {
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                        hour: '2-digit', minute: '2-digit', second: '2-digit',
+                        timeZone: 'Europe/Paris' };
+      const now = new Date().toLocaleString('en-GB', options);
+      document.getElementById('date-time').textContent = now;
+    }
+    setInterval(updateDateTime, 1000);
+    updateDateTime();
+
+    // Weather from OpenWeatherMap
+    async function fetchWeather() {
+      const apiKey = "YOUR_API_KEY"; // <<== replace with your API key
+      const city = "Cannes,FR";
+      const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        const temp = Math.round(data.main.temp);
+        const desc = data.weather[0].description;
+        const icon = `http://openweathermap.org/img/wn/${data.weather[0].icon}.png`;
+        document.getElementById("weather").innerHTML =
+          `Weather in Cannes: <img src="${icon}" alt="icon"> ${temp}°C, ${desc}`;
+      } catch (err) {
+        document.getElementById("weather").textContent = "Weather unavailable";
+      }
+    }
+    fetchWeather();
+
+    // Tasks
+    function updateProgress() {
+      const tasks = document.querySelectorAll('#task-list li input');
+      const total = tasks.length;
+      const done = Array.from(tasks).filter(t => t.checked).length;
+      const percent = total ? Math.round((done / total) * 100) : 0;
+      const bar = document.getElementById('progress-bar');
+      bar.style.width = percent + "%";
+      bar.textContent = percent + "%";
+    }
+
+    function addTask() {
+      const input = document.getElementById('new-task');
+      if (input.value.trim() === "") return;
+      const li = document.createElement('li');
+      li.innerHTML = `<input type="checkbox" onchange="updateProgress()"> ${input.value}`;
+      document.getElementById('task-list').appendChild(li);
+      input.value = "";
+      updateProgress();
+    }
+
+    function resetTasks() {
+      document.getElementById('task-list').innerHTML = "";
+      updateProgress();
+    }
+
+    // Work Log
+    function addSession() {
+      const tbody = document.querySelector('#work-log tbody');
+      const tr = document.createElement('tr');
+      const today = new Date().toLocaleDateString('en-GB', { timeZone: 'Europe/Paris' });
+      tr.innerHTML = `
+        <td>${today}</td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    function closeDay() {
+      const rows = document.querySelectorAll('#work-log tbody tr');
+      let totalHours = 0;
+      rows.forEach(r => {
+        const h = parseFloat(r.children[1].textContent);
+        if (!isNaN(h)) totalHours += h;
+      });
+      document.getElementById('summary').textContent =
+        `Today: ${totalHours} hours of work logged.`;
+    }
+  </script>
+
+</body>
+</html>
